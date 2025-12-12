@@ -1,117 +1,71 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { SignInPage, type Testimonial } from '@/components/ui/sign-in';
-import { authClient } from '@/lib/auth-client';
-
-const sampleTestimonials: Testimonial[] = [
-    {
-        avatarSrc: 'https://randomuser.me/api/portraits/women/57.jpg',
-        name: 'Sarah Chen',
-        handle: '@sarahdigital',
-        text: 'Amazing platform! The user experience is seamless and the features are exactly what I needed.',
-    },
-    {
-        avatarSrc: 'https://randomuser.me/api/portraits/men/64.jpg',
-        name: 'Marcus Johnson',
-        handle: '@marcustech',
-        text: 'This service has transformed how I work. Clean design, powerful features, and excellent support.',
-    },
-    {
-        avatarSrc: 'https://randomuser.me/api/portraits/men/32.jpg',
-        name: 'David Martinez',
-        handle: '@davidcreates',
-        text: "I've tried many platforms, but this one stands out. Intuitive, reliable, and genuinely helpful for productivity.",
-    },
-];
+import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SignIn() {
-    const [loading, setLoading] = useState(false);
-    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
-
-        if (!email || !password) {
-            toast.error('Please fill in all fields');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            await authClient.signIn.email(
-                {
-                    email,
-                    password,
-                },
-                {
-                    onRequest: () => {
-                        setLoading(true);
-                    },
-                    onSuccess: () => {
-                        toast.success('Signed in successfully');
-                        router.push('/dashboard');
-                    },
-                    onError: (ctx) => {
-                        toast.error(ctx.error.message);
-                        setLoading(false);
-                    },
-                },
-            );
-        } catch (error) {
-            console.error(error);
-            toast.error('Something went wrong');
-            setLoading(false);
-        }
-    };
-
-    const handleAtlassianSignIn = async () => {
-        setLoading(true);
+    const handleGoogleSignIn = async () => {
+        setIsLoading(true);
         try {
             await authClient.signIn.social({
-                provider: 'atlassian',
-                callbackURL: '/dashboard',
+                provider: "google",
+                callbackURL: "/dashboard",
             });
         } catch (error) {
-            console.error('Atlassian sign-in error:', error);
-            toast.error('Failed to sign in with Atlassian');
-            setLoading(false);
+            console.error(error);
+            toast.error("Failed to sign in with Google");
+            setIsLoading(false);
         }
-    };
-
-    const handleResetPassword = () => {
-        toast.info('Password reset coming soon!');
-    };
-
-    const handleCreateAccount = () => {
-        router.push('/auth/signup');
-    };
-
-    const handleGoBack = () => {
-        router.push('/');
     };
 
     return (
-        <SignInPage
-            title={
-                <span className="font-light text-foreground tracking-tighter">
-                    Welcome Back
-                </span>
-            }
-            description="Sign in to continue your journey with ClearSprint AI"
-            heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
-            testimonials={sampleTestimonials}
-            onSignIn={handleSignIn}
-            onAtlassianSignIn={handleAtlassianSignIn}
-            onResetPassword={handleResetPassword}
-            onCreateAccount={handleCreateAccount}
-            onGoBack={handleGoBack}
-            isLoading={loading}
-        />
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+            <Card className="w-full max-w-md border-border/50 shadow-xl backdrop-blur-sm bg-card/50">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl font-bold">Welcome to Optimum CV</CardTitle>
+                    <CardDescription>
+                        Sign in to manage your PFE applications and resume.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button
+                        variant="outline"
+                        className="w-full py-6 text-base font-medium"
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                            <svg
+                                className="mr-2 h-5 w-5"
+                                aria-hidden="true"
+                                focusable="false"
+                                data-prefix="fab"
+                                data-icon="google"
+                                role="img"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 488 512"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
+                                ></path>
+                            </svg>
+                        )}
+                        Continue with Google
+                    </Button>
+                    <p className="mt-4 text-center text-xs text-muted-foreground">
+                        By clicking continue, you agree to our Terms of Service and Privacy Policy.
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
