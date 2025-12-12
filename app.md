@@ -16,3 +16,18 @@ of course detect the email fothe compan yform the pfe book, and we give him th c
 then the user can click it to apply automatically, we generate newCV that's optimizeed fo pfe subject and then a cover letter and then the eamil body, we then give him confirmatipon of cours eof the reusme, email cover letter etc and when confirmed he can click the send button.
 
 of course eerything needs to be well abstracted so that theapp is very extensible and we can make the subjetc cards felxible to be used for jobs instead of pfe topics in the future.
+
+
+
+
+1. Populate your project context:
+   "Please read openspec/project.md and help me fill it out
+    with details about my project, tech stack, and conventions"
+
+2. Create your first change proposal:
+   "I want to add [YOUR FEATURE HERE]. Please create an
+    OpenSpec change proposal for this feature"
+
+3. Learn the OpenSpec workflow:
+   "Please explain the OpenSpec workflow from openspec/AGENTS.md
+    and how I should work with you on this project"
