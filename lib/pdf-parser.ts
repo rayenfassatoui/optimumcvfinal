@@ -1,3 +1,5 @@
+import { extractText, getDocumentProxy } from "unpdf";
+
 export interface PDFParseResult {
     text: string;
     numPages: number;
@@ -5,19 +7,18 @@ export interface PDFParseResult {
 
 /**
  * Parse PDF file and extract text content
- * Server-side only - uses pdf-parse library
- * @param file - The PDF file as a Buffer
+ * Uses unpdf - designed for Node.js/serverless environments
+ * @param file - The PDF file as a Buffer or Uint8Array
  * @returns Extracted text and metadata
  */
-export async function parsePDF(file: Buffer): Promise<PDFParseResult> {
+export async function parsePDF(file: Buffer | Uint8Array): Promise<PDFParseResult> {
     try {
-        // Use dynamic require for CommonJS module
-        const pdfParse = require("pdf-parse");
-        const data = await pdfParse(file);
+        const pdf = await getDocumentProxy(new Uint8Array(file));
+        const { text, totalPages } = await extractText(pdf, { mergePages: true });
 
         return {
-            text: data.text,
-            numPages: data.numpages,
+            text: Array.isArray(text) ? text.join("\n\n") : text,
+            numPages: totalPages,
         };
     } catch (error: any) {
         console.error("PDF parsing error:", error);
