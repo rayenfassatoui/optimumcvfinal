@@ -22,7 +22,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { createResume, deleteResume } from "../actions/resume-crud";
+import { deleteResume } from "../actions/resume-crud";
+import { CreateResumeDialog } from "./create-resume-dialog";
 
 interface Resume {
     id: string;
@@ -37,20 +38,8 @@ interface ResumeListProps {
 export function ResumeList({ resumes: initialResumes }: ResumeListProps) {
     const router = useRouter();
     const [resumes, setResumes] = useState(initialResumes);
-    const [isCreating, setIsCreating] = useState(false);
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
-
-    const handleCreate = async () => {
-        setIsCreating(true);
-        try {
-            const newResume = await createResume();
-            router.push(`/dashboard/resume/${newResume.id}`);
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to create resume");
-            setIsCreating(false);
-        }
-    };
 
     const handleDelete = async () => {
         if (!deleteId) return;
@@ -83,9 +72,9 @@ export function ResumeList({ resumes: initialResumes }: ResumeListProps) {
                         Manage and edit your resumes.
                     </p>
                 </div>
-                <Button onClick={handleCreate} disabled={isCreating}>
+                <Button onClick={() => setShowCreateDialog(true)}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {isCreating ? "Creating..." : "New Resume"}
+                    New Resume
                 </Button>
             </div>
 
@@ -97,7 +86,7 @@ export function ResumeList({ resumes: initialResumes }: ResumeListProps) {
                         <p className="text-muted-foreground text-center mb-4">
                             Create your first resume to get started.
                         </p>
-                        <Button onClick={handleCreate} disabled={isCreating}>
+                        <Button onClick={() => setShowCreateDialog(true)}>
                             <Plus className="mr-2 h-4 w-4" />
                             Create Resume
                         </Button>
@@ -168,6 +157,11 @@ export function ResumeList({ resumes: initialResumes }: ResumeListProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <CreateResumeDialog 
+                open={showCreateDialog} 
+                onOpenChange={setShowCreateDialog} 
+            />
         </div>
     );
 }
