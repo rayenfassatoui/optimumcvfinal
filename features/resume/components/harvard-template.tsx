@@ -1,26 +1,29 @@
 /* eslint-disable jsx-a11y/alt-text */
-import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
-import { ProfileData } from '@/features/onboarding/types';
-
-// Register fonts if needed. For now using standard fonts.
-// Font.register({ family: 'Times-Roman', src: '...' });
+import React from "react";
+import {
+    Page,
+    Text,
+    View,
+    Document,
+    StyleSheet,
+} from "@react-pdf/renderer";
+import { ProfileData } from "@/features/onboarding/types";
 
 const styles = StyleSheet.create({
     page: {
         padding: 30,
-        fontFamily: 'Times-Roman',
+        fontFamily: "Times-Roman",
         fontSize: 11,
-        lineHeight: 1.2,
+        lineHeight: 1.3,
     },
     header: {
         marginBottom: 10,
-        textAlign: 'center',
+        textAlign: "center",
     },
     name: {
         fontSize: 16,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
+        fontWeight: "bold",
+        textTransform: "uppercase",
         marginBottom: 4,
     },
     contact: {
@@ -32,26 +35,26 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 12,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
+        fontWeight: "bold",
+        textTransform: "uppercase",
         borderBottomWidth: 1,
-        borderBottomColor: '#000',
+        borderBottomColor: "#000",
         marginBottom: 6,
         paddingBottom: 2,
     },
     row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        flexDirection: "row",
+        justifyContent: "space-between",
         marginBottom: 2,
     },
     bold: {
-        fontWeight: 'bold',
+        fontWeight: "bold",
     },
     italic: {
-        fontStyle: 'italic',
+        fontStyle: "italic",
     },
     bulletPoint: {
-        flexDirection: 'row',
+        flexDirection: "row",
         marginBottom: 2,
         paddingLeft: 10,
     },
@@ -62,6 +65,11 @@ const styles = StyleSheet.create({
     bulletContent: {
         flex: 1,
         fontSize: 10,
+    },
+    summary: {
+        fontSize: 10,
+        marginBottom: 10,
+        textAlign: "justify",
     },
 });
 
@@ -76,9 +84,17 @@ export const HarvardTemplate = ({ data }: HarvardTemplateProps) => (
             <View style={styles.header}>
                 <Text style={styles.name}>{data.fullName}</Text>
                 <Text style={styles.contact}>
-                    {data.email} | {data.phone} | {data.linkedinUrl}
+                    {[data.email, data.phone, data.linkedinUrl].filter(Boolean).join(" | ")}
                 </Text>
             </View>
+
+            {/* Summary */}
+            {data.summary && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Summary</Text>
+                    <Text style={styles.summary}>{data.summary}</Text>
+                </View>
+            )}
 
             {/* Education */}
             {data.education && data.education.length > 0 && (
@@ -88,7 +104,9 @@ export const HarvardTemplate = ({ data }: HarvardTemplateProps) => (
                         <View key={index} style={{ marginBottom: 4 }}>
                             <View style={styles.row}>
                                 <Text style={styles.bold}>{edu.school}</Text>
-                                <Text>{edu.startDate} - {edu.endDate || 'Present'}</Text>
+                                <Text>
+                                    {edu.startDate} - {edu.endDate || "Present"}
+                                </Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.italic}>{edu.degree}</Text>
@@ -106,16 +124,19 @@ export const HarvardTemplate = ({ data }: HarvardTemplateProps) => (
                         <View key={index} style={{ marginBottom: 6 }}>
                             <View style={styles.row}>
                                 <Text style={styles.bold}>{exp.company}</Text>
-                                <Text>{exp.startDate} - {exp.endDate || 'Present'}</Text>
+                                <Text>
+                                    {exp.startDate} - {exp.endDate || "Present"}
+                                </Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.italic}>{exp.title}</Text>
                             </View>
-                            {/* Split description by newlines or bullets if possible. For now just text */}
-                            <View style={styles.bulletPoint}>
-                                <Text style={styles.bullet}>•</Text>
-                                <Text style={styles.bulletContent}>{exp.description}</Text>
-                            </View>
+                            {exp.description && (
+                                <View style={styles.bulletPoint}>
+                                    <Text style={styles.bullet}>-</Text>
+                                    <Text style={styles.bulletContent}>{exp.description}</Text>
+                                </View>
+                            )}
                         </View>
                     ))}
                 </View>
@@ -130,13 +151,17 @@ export const HarvardTemplate = ({ data }: HarvardTemplateProps) => (
                             <View style={styles.row}>
                                 <Text style={styles.bold}>{proj.name}</Text>
                             </View>
-                            <View style={styles.bulletPoint}>
-                                <Text style={styles.bullet}>•</Text>
-                                <Text style={styles.bulletContent}>{proj.description}</Text>
-                            </View>
-                            <Text style={{ fontSize: 9, fontStyle: 'italic', marginLeft: 10 }}>
-                                Tech Stack: {proj.techStack.join(', ')}
-                            </Text>
+                            {proj.description && (
+                                <View style={styles.bulletPoint}>
+                                    <Text style={styles.bullet}>-</Text>
+                                    <Text style={styles.bulletContent}>{proj.description}</Text>
+                                </View>
+                            )}
+                            {proj.techStack.length > 0 && (
+                                <Text style={{ fontSize: 9, fontStyle: "italic", marginLeft: 10 }}>
+                                    Tech Stack: {proj.techStack.join(", ")}
+                                </Text>
+                            )}
                         </View>
                     ))}
                 </View>
@@ -146,9 +171,7 @@ export const HarvardTemplate = ({ data }: HarvardTemplateProps) => (
             {data.skills && data.skills.length > 0 && (
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Skills</Text>
-                    <Text style={{ fontSize: 10 }}>
-                        {data.skills.join(' • ')}
-                    </Text>
+                    <Text style={{ fontSize: 10 }}>{data.skills.join(" - ")}</Text>
                 </View>
             )}
         </Page>

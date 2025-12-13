@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProfileData } from "@/features/onboarding/types";
 import { ProfileReviewForm } from "@/features/onboarding/components/profile-review-form";
 import { ResumePreview } from "./resume-preview";
-import { updateProfile } from "@/features/onboarding/actions/update-profile";
+import { updateResume } from "../actions/resume-crud";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Wand2 } from "lucide-react";
+import { Sparkles, Wand2, ArrowLeft } from "lucide-react";
 import { optimizeResume } from "../actions/optimize-resume";
 import {
     Dialog,
@@ -21,12 +22,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 interface ResumeEditorPageProps {
+    resumeId: string;
+    resumeName: string;
     initialData: ProfileData;
 }
 
-export function ResumeEditorPage({ initialData }: ResumeEditorPageProps) {
+export function ResumeEditorPage({ resumeId, resumeName, initialData }: ResumeEditorPageProps) {
+    const router = useRouter();
     const [data, setData] = useState<ProfileData>(initialData);
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [customInstruction, setCustomInstruction] = useState("");
@@ -34,7 +39,7 @@ export function ResumeEditorPage({ initialData }: ResumeEditorPageProps) {
 
     const handleSave = async (newData: ProfileData) => {
         try {
-            await updateProfile(newData);
+            await updateResume(resumeId, newData);
             toast.success("Resume saved!");
         } catch (error) {
             console.error(error);
@@ -60,7 +65,14 @@ export function ResumeEditorPage({ initialData }: ResumeEditorPageProps) {
     return (
         <div className="h-[calc(100vh-120px)] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b bg-background">
-                <h2 className="text-lg font-semibold">Resume Editor</h2>
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/dashboard/resume">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <h2 className="text-lg font-semibold">{resumeName}</h2>
+                </div>
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
@@ -98,7 +110,10 @@ export function ResumeEditorPage({ initialData }: ResumeEditorPageProps) {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button onClick={() => handleOptimize(customInstruction)} disabled={isOptimizing || !customInstruction}>
+                                <Button
+                                    onClick={() => handleOptimize(customInstruction)}
+                                    disabled={isOptimizing || !customInstruction}
+                                >
                                     {isOptimizing ? "Processing..." : "Apply Changes"}
                                 </Button>
                             </DialogFooter>
@@ -110,7 +125,7 @@ export function ResumeEditorPage({ initialData }: ResumeEditorPageProps) {
             <div className="flex-1 overflow-hidden">
                 <ResizablePanelGroup direction="horizontal">
                     <ResizablePanel defaultSize={50} minSize={30}>
-                        <div className="h-full overflow-y-auto p-4">
+                        <div className="h-full overflow-y-auto">
                             <ProfileReviewForm
                                 initialData={initialData}
                                 data={data}

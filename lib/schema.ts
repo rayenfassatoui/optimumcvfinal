@@ -97,7 +97,8 @@ export const profile = pgTable("profile", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  content: text("content").notNull(), // Markdown representation
+  name: text("name").notNull().default("My Resume"), // Resume title
+  content: text("content").notNull(), // JSON stringified ProfileData
   originalCvUrl: text("original_cv_url"),
   linkedinUrl: text("linkedin_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

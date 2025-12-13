@@ -1,27 +1,19 @@
 import { redirect } from "next/navigation";
-import { getProfile } from "@/features/onboarding/actions/get-profile";
-import { ResumeEditorPage } from "@/features/resume/components/resume-editor-page";
-import { ProfileData } from "@/features/onboarding/types";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getResumes } from "@/features/resume/actions/get-resumes";
+import { ResumeList } from "@/features/resume/components/resume-list";
 
 export default async function ResumePage() {
-    const userProfile = await getProfile();
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
 
-    if (!userProfile) {
-        redirect("/onboarding");
+    if (!session) {
+        redirect("/auth/signin");
     }
 
-    let profileData: ProfileData;
-    try {
-        profileData = JSON.parse(userProfile.content);
-    } catch (e) {
-        profileData = {
-            fullName: "",
-            email: "",
-            experience: [],
-            education: [],
-            skills: [],
-        };
-    }
+    const resumes = await getResumes();
 
-    return <ResumeEditorPage initialData={profileData} />;
+    return <ResumeList resumes={resumes} />;
 }
