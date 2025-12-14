@@ -10,10 +10,12 @@ export async function sendEmail({
     to,
     subject,
     body,
+    attachments = [],
 }: {
     to: string;
     subject: string;
     body: string;
+    attachments?: { filename: string; content: string; contentType: string }[];
 }) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -35,15 +37,34 @@ export async function sendEmail({
         throw new Error("Google account not linked or missing access token");
     }
 
-    // Construct raw email
-    const message = [
+    const boundary = "foo_bar_baz";
+    const messageParts = [
         `To: ${to}`,
+        `Subject: ${subject}`,
+        "MIME-Version: 1.0",
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        "",
+        `--${boundary}`,
         "Content-Type: text/plain; charset=utf-8",
         "MIME-Version: 1.0",
-        `Subject: ${subject}`,
         "",
         body,
-    ].join("\n");
+    ];
+
+    if (attachments && attachments.length > 0) {
+        for (const attachment of attachments) {
+            messageParts.push(`--${boundary}`);
+            messageParts.push(`Content-Type: ${attachment.contentType}; name="${attachment.filename}"`);
+            messageParts.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+            messageParts.push("Content-Transfer-Encoding: base64");
+            messageParts.push("");
+            messageParts.push(attachment.content);
+        }
+    }
+
+    messageParts.push(`--${boundary}--`);
+
+    const message = messageParts.join("\n");
 
     const encodedMessage = Buffer.from(message)
         .toString("base64")

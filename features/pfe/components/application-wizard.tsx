@@ -12,6 +12,9 @@ import { Loader2, Send, CheckCircle, FileText, Sparkles } from 'lucide-react';
 import { ResumePreview } from '@/features/resume/components/resume-preview';
 import { toast } from 'sonner';
 import { sendEmail } from '../actions/send-email';
+import { pdf } from '@react-pdf/renderer';
+import { HarvardTemplate } from '@/features/resume/components/harvard-template';
+import { CoverLetterTemplate } from './cover-letter-template';
 
 interface ApplicationWizardProps {
   topicId: string;
@@ -64,6 +67,15 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
     }
   };
 
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleSend = async () => {
     if (!generatedContent.emailTo) {
       toast.error('Please enter a recipient email address');
@@ -71,18 +83,44 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
       return;
     }
 
-    toast.promise(
-      sendEmail({
+    const toastId = toast.loading('Preparing application...');
+
+    try {
+      // Generate Resume PDF
+      const resumeBlob = await pdf(
+        <HarvardTemplate data={generatedContent.tailoredResume} />
+      ).toBlob();
+      const resumeBase64 = await blobToBase64(resumeBlob);
+
+      // Generate Cover Letter PDF
+      const coverLetterBlob = await pdf(
+        <CoverLetterTemplate content={generatedContent.coverLetter} />
+      ).toBlob();
+      const coverLetterBase64 = await blobToBase64(coverLetterBlob);
+
+      await sendEmail({
         to: generatedContent.emailTo,
         subject: generatedContent.emailSubject,
         body: generatedContent.emailBody,
-      }),
-      {
-        loading: 'Sending email...',
-        success: 'Application sent successfully!',
-        error: 'Failed to send email. Check your Google connection.',
-      }
-    );
+        attachments: [
+          {
+            filename: 'Resume.pdf',
+            content: resumeBase64.split(',')[1], // Remove data URL prefix
+            contentType: 'application/pdf',
+          },
+          {
+            filename: 'CoverLetter.pdf',
+            content: coverLetterBase64.split(',')[1], // Remove data URL prefix
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+
+      toast.success('Application sent successfully!', { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to send email', { id: toastId });
+    }
   };
 
   if (isLoadingResumes) {
