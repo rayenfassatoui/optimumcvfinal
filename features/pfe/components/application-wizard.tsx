@@ -1,20 +1,36 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { generateApplicationContent } from '../actions/generate-application-content';
-import { getResumes } from '@/features/resume/actions/get-resumes';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Send, CheckCircle, FileText, Sparkles } from 'lucide-react';
-import { ResumePreview } from '@/features/resume/components/resume-preview';
-import { toast } from 'sonner';
-import { sendEmail } from '../actions/send-email';
-import { pdf } from '@react-pdf/renderer';
-import { HarvardTemplate } from '@/features/resume/components/harvard-template';
-import { CoverLetterTemplate } from './cover-letter-template';
+import { pdf } from "@react-pdf/renderer";
+import { CheckCircle, FileText, Loader2, Send, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import type { ProfileData } from "@/features/onboarding/types";
+import { getResumes } from "@/features/resume/actions/get-resumes";
+import { HarvardTemplate } from "@/features/resume/components/harvard-template";
+import { ResumePreview } from "@/features/resume/components/resume-preview";
+import { generateApplicationContent } from "../actions/generate-application-content";
+import { sendEmail } from "../actions/send-email";
+import { CoverLetterTemplate } from "./cover-letter-template";
+
+interface GeneratedContent {
+  tailoredResume: ProfileData;
+  coverLetter: string;
+  emailBody: string;
+  emailSubject: string;
+  emailTo: string;
+}
+
+interface ResumeRecord {
+  id: string;
+  name: string;
+  content: string;
+  updatedAt: Date;
+}
 
 interface ApplicationWizardProps {
   topicId: string;
@@ -22,10 +38,11 @@ interface ApplicationWizardProps {
 
 export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('resume');
-  const [resumes, setResumes] = useState<any[]>([]);
-  const [selectedResumeId, setSelectedResumeId] = useState<string>('');
+  const [generatedContent, setGeneratedContent] =
+    useState<GeneratedContent | null>(null);
+  const [activeTab, setActiveTab] = useState("resume");
+  const [resumes, setResumes] = useState<ResumeRecord[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
   const [isLoadingResumes, setIsLoadingResumes] = useState(true);
 
   useEffect(() => {
@@ -37,8 +54,8 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
           setSelectedResumeId(data[0].id);
         }
       } catch (error) {
-        console.error('Failed to fetch resumes:', error);
-        toast.error('Failed to load resumes');
+        console.error("Failed to fetch resumes:", error);
+        toast.error("Failed to load resumes");
       } finally {
         setIsLoadingResumes(false);
       }
@@ -48,7 +65,7 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
 
   const generate = async () => {
     if (!selectedResumeId) {
-      toast.error('Please select a resume first');
+      toast.error("Please select a resume first");
       return;
     }
 
@@ -56,12 +73,12 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
     try {
       const content = await generateApplicationContent(
         topicId,
-        selectedResumeId
+        selectedResumeId,
       );
       setGeneratedContent(content);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to generate application');
+      toast.error("Failed to generate application");
     } finally {
       setIsLoading(false);
     }
@@ -77,24 +94,29 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
   };
 
   const handleSend = async () => {
-    if (!generatedContent.emailTo) {
-      toast.error('Please enter a recipient email address');
-      setActiveTab('email');
+    if (!generatedContent) {
+      toast.error("No application content generated yet");
       return;
     }
 
-    const toastId = toast.loading('Preparing application...');
+    if (!generatedContent.emailTo) {
+      toast.error("Please enter a recipient email address");
+      setActiveTab("email");
+      return;
+    }
+
+    const toastId = toast.loading("Preparing application...");
 
     try {
       // Generate Resume PDF
       const resumeBlob = await pdf(
-        <HarvardTemplate data={generatedContent.tailoredResume} />
+        <HarvardTemplate data={generatedContent.tailoredResume} />,
       ).toBlob();
       const resumeBase64 = await blobToBase64(resumeBlob);
 
       // Generate Cover Letter PDF
       const coverLetterBlob = await pdf(
-        <CoverLetterTemplate content={generatedContent.coverLetter} />
+        <CoverLetterTemplate content={generatedContent.coverLetter} />,
       ).toBlob();
       const coverLetterBase64 = await blobToBase64(coverLetterBlob);
 
@@ -104,44 +126,44 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
         body: generatedContent.emailBody,
         attachments: [
           {
-            filename: 'Resume.pdf',
-            content: resumeBase64.split(',')[1], // Remove data URL prefix
-            contentType: 'application/pdf',
+            filename: "Resume.pdf",
+            content: resumeBase64.split(",")[1], // Remove data URL prefix
+            contentType: "application/pdf",
           },
           {
-            filename: 'CoverLetter.pdf',
-            content: coverLetterBase64.split(',')[1], // Remove data URL prefix
-            contentType: 'application/pdf',
+            filename: "CoverLetter.pdf",
+            content: coverLetterBase64.split(",")[1], // Remove data URL prefix
+            contentType: "application/pdf",
           },
         ],
       });
 
-      toast.success('Application sent successfully!', { id: toastId });
+      toast.success("Application sent successfully!", { id: toastId });
     } catch (error) {
       console.error(error);
-      toast.error('Failed to send email', { id: toastId });
+      toast.error("Failed to send email", { id: toastId });
     }
   };
 
   if (isLoadingResumes) {
     return (
-      <div className='flex items-center justify-center h-[60vh]'>
-        <Loader2 className='w-8 h-8 animate-spin text-primary' />
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (resumes.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center h-[60vh] space-y-4'>
-        <FileText className='w-12 h-12 text-muted-foreground' />
-        <h3 className='text-xl font-semibold'>No Resumes Found</h3>
-        <p className='text-muted-foreground text-center max-w-md'>
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <FileText className="w-12 h-12 text-muted-foreground" />
+        <h3 className="text-xl font-semibold">No Resumes Found</h3>
+        <p className="text-muted-foreground text-center max-w-md">
           You need to create at least one resume before you can apply to PFE
           topics.
         </p>
         <Button asChild>
-          <a href='/dashboard/resume'>Create Resume</a>
+          <a href="/dashboard/resume">Create Resume</a>
         </Button>
       </div>
     );
@@ -149,12 +171,12 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
 
   if (isLoading) {
     return (
-      <div className='flex flex-col items-center justify-center h-[60vh] space-y-4'>
-        <Loader2 className='w-12 h-12 animate-spin text-primary' />
-        <p className='text-lg font-medium text-muted-foreground'>
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <p className="text-lg font-medium text-muted-foreground">
           Generating tailored application materials...
         </p>
-        <p className='text-sm text-muted-foreground'>
+        <p className="text-sm text-muted-foreground">
           Creating custom resume, cover letter, and email.
         </p>
       </div>
@@ -163,17 +185,17 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
 
   if (!generatedContent) {
     return (
-      <div className='max-w-2xl mx-auto py-12 space-y-8'>
-        <div className='text-center space-y-2'>
-          <h2 className='text-2xl font-bold'>Customize Your Application</h2>
-          <p className='text-muted-foreground'>
+      <div className="max-w-2xl mx-auto py-12 space-y-8">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold">Customize Your Application</h2>
+          <p className="text-muted-foreground">
             Select a base resume to tailor for this specific internship topic.
           </p>
         </div>
 
-        <div className='space-y-4'>
+        <div className="space-y-4">
           <Label>Select Base Resume</Label>
-          <div className='grid gap-4 md:grid-cols-2'>
+          <div className="grid gap-4 md:grid-cols-2">
             {resumes.map((resume) => (
               <div
                 key={resume.id}
@@ -181,21 +203,21 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
                                     cursor-pointer rounded-lg border-2 p-4 transition-all hover:border-primary
                                     ${
                                       selectedResumeId === resume.id
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-muted'
+                                        ? "border-primary bg-primary/5"
+                                        : "border-muted"
                                     }
                                 `}
                 onClick={() => setSelectedResumeId(resume.id)}
               >
-                <div className='flex items-start justify-between'>
-                  <div className='space-y-1'>
-                    <p className='font-semibold'>{resume.name}</p>
-                    <p className='text-xs text-muted-foreground'>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="font-semibold">{resume.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       Updated {new Date(resume.updatedAt).toLocaleDateString()}
                     </p>
                   </div>
                   {selectedResumeId === resume.id && (
-                    <CheckCircle className='w-5 h-5 text-primary' />
+                    <CheckCircle className="w-5 h-5 text-primary" />
                   )}
                 </div>
               </div>
@@ -203,8 +225,8 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
           </div>
         </div>
 
-        <Button size='lg' className='w-full' onClick={generate}>
-          <Sparkles className='w-4 h-4 mr-2' />
+        <Button size="lg" className="w-full" onClick={generate}>
+          <Sparkles className="w-4 h-4 mr-2" />
           Generate Application
         </Button>
       </div>
@@ -212,20 +234,20 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
   }
 
   return (
-    <div className='space-y-6 h-full flex flex-col'>
-      <div className='flex items-center justify-between'>
+    <div className="space-y-6 h-full flex flex-col">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className='text-2xl font-bold'>Review Application</h2>
+          <h2 className="text-2xl font-bold">Review Application</h2>
           <Button
-            variant='link'
-            className='p-0 h-auto text-muted-foreground text-sm'
+            variant="link"
+            className="p-0 h-auto text-muted-foreground text-sm"
             onClick={() => setGeneratedContent(null)}
           >
             ← Back to selection
           </Button>
         </div>
-        <Button onClick={handleSend} className='gap-2'>
-          <Send className='w-4 h-4' />
+        <Button onClick={handleSend} className="gap-2">
+          <Send className="w-4 h-4" />
           Send Application
         </Button>
       </div>
@@ -233,29 +255,29 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className='flex-1 flex flex-col'
+        className="flex-1 flex flex-col"
       >
-        <TabsList className='grid w-full grid-cols-3'>
-          <TabsTrigger value='resume'>Tailored Resume</TabsTrigger>
-          <TabsTrigger value='cover-letter'>Cover Letter</TabsTrigger>
-          <TabsTrigger value='email'>Email</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="resume">Tailored Resume</TabsTrigger>
+          <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
+          <TabsTrigger value="email">Email</TabsTrigger>
         </TabsList>
 
-        <div className='flex-1 mt-4 border rounded-lg p-4 bg-background overflow-hidden'>
-          <TabsContent value='resume' className='h-full mt-0'>
-            <div className='h-full overflow-hidden'>
+        <div className="flex-1 mt-4 border rounded-lg p-4 bg-background overflow-hidden">
+          <TabsContent value="resume" className="h-full mt-0">
+            <div className="h-full overflow-hidden">
               <ResumePreview data={generatedContent.tailoredResume} />
             </div>
           </TabsContent>
 
           <TabsContent
-            value='cover-letter'
-            className='h-full mt-0 overflow-y-auto'
+            value="cover-letter"
+            className="h-full mt-0 overflow-y-auto"
           >
-            <div className='space-y-2 h-full'>
+            <div className="space-y-2 h-full">
               <Label>Cover Letter Content (Markdown)</Label>
               <Textarea
-                className='h-full font-mono text-sm resize-none'
+                className="h-full font-mono text-sm resize-none"
                 value={generatedContent.coverLetter}
                 onChange={(e) =>
                   setGeneratedContent({
@@ -267,14 +289,14 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
             </div>
           </TabsContent>
 
-          <TabsContent value='email' className='h-full mt-0'>
-            <div className='space-y-4 h-full flex flex-col'>
-              <div className='grid grid-cols-2 gap-4'>
-                <div className='space-y-2'>
+          <TabsContent value="email" className="h-full mt-0">
+            <div className="space-y-4 h-full flex flex-col">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label>To</Label>
                   <Input
-                    placeholder='recruiter@company.com'
-                    value={generatedContent.emailTo || ''}
+                    placeholder="recruiter@company.com"
+                    value={generatedContent.emailTo || ""}
                     onChange={(e) =>
                       setGeneratedContent({
                         ...generatedContent,
@@ -283,7 +305,7 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
                     }
                   />
                 </div>
-                <div className='space-y-2'>
+                <div className="space-y-2">
                   <Label>Subject</Label>
                   <Input
                     value={generatedContent.emailSubject}
@@ -296,10 +318,10 @@ export function ApplicationWizard({ topicId }: ApplicationWizardProps) {
                   />
                 </div>
               </div>
-              <div className='space-y-2 flex-1 flex flex-col'>
+              <div className="space-y-2 flex-1 flex flex-col">
                 <Label>Body</Label>
                 <Textarea
-                  className='flex-1 resize-none'
+                  className="flex-1 resize-none"
                   value={generatedContent.emailBody}
                   onChange={(e) =>
                     setGeneratedContent({

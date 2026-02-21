@@ -77,7 +77,7 @@ export async function generateApplicationContent(
   `;
 
   const completion = await openai.chat.completions.create({
-    model: 'mistralai/devstral-2512:free',
+    model: 'arcee-ai/trinity-large-preview:free',
     messages: [
       {
         role: 'system',

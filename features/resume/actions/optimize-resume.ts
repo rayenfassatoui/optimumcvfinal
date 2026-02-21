@@ -30,7 +30,7 @@ export async function optimizeResume(currentData: ProfileData, instruction: stri
   `;
 
     const completion = await openai.chat.completions.create({
-        model: "mistralai/devstral-2512:free",
+        model: "arcee-ai/trinity-large-preview:free",
         messages: [
             { role: "system", content: "You are a helpful assistant that improves resumes." },
             { role: "user", content: prompt },
